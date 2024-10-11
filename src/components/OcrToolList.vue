@@ -53,6 +53,21 @@ export default {
       }
     },
 
+    // 当接收到截图完成的消息时处理识别操作
+    onImageCaptured(croppedImage) {
+      console.log(croppedImage)
+      console.log("接收到截图完成的图像数据：", croppedImage);
+      this.ocrRecognize(croppedImage)
+        .then((recognizedText) => {
+          // 将识别结果拷贝到剪贴板
+          clipboard.writeText(recognizedText);
+          alert("识别成功！内容已拷贝至剪贴板。");
+        })
+        .catch((error) => {
+          console.error("OCR 识别失败：", error);
+        });
+    },
+
     // 上传文件并调用 OCR 接口进行识别
     uploadAndRecognize(filePath, fileContent) {
       const apiUrl = "http://192.168.14.48:5000/ocr";
@@ -79,8 +94,52 @@ export default {
           alert("OCR 识别失败，请检查接口或文件格式。");
         });
     },
+    // 调用 OCR API 进行识别
+    // async ocrRecognize(imageData) {
+    //   try {
+    //     // 替换为实际的 OCR API 地址和密钥
+    //     const apiUrl = "https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic";
+    //     const accessToken = "your_baidu_access_token"; // 替换为实际的 Access Token
+    //     const response = await axios.post(
+    //       `${apiUrl}?access_token=${accessToken}`,
+    //       { image: imageData.replace(/^data:image\/\w+;base64,/, "") }, // 去掉 base64 头部
+    //       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    //     );
+    //     if (response.data.words_result) {
+    //       return response.data.words_result.map((item) => item.words).join("\n");
+    //     } else {
+    //       throw new Error("未识别到文字内容");
+    //     }
+    //   } catch (error) {
+    //     console.error("OCR API 调用失败：", error);
+    //     return "OCR 识别失败";
+    //   }
+    // },
+    async ocrRecognize(imageData) {
+      try {
+        // 使用新的本地 OCR API 地址
+        const apiUrl = "http://192.168.14.48:5000/ocr";
+        // 构造请求数据
+        const requestData = {
+          image: imageData, // 直接传递 base64 格式的图像数据
+        };
+        // 调用本地 OCR 接口
+        const response = await axios.post(apiUrl, requestData, {
+          headers: { "Content-Type": "application/json" }, // 使用 JSON 格式
+        });
+        // 检查返回结果并提取识别到的文本
+        if (response.data && response.data.text) {
+          return response.data.text;
+        } else {
+          throw new Error("未识别到文字内容");
+        }
+      } catch (error) {
+        console.error("OCR API 调用失败：", error);
+        return "OCR 识别失败";
+      }
+    },
   },
-
+ 
   mounted() {
     // 监听主进程的文件选择结果
     ipcRenderer.on('selected-file', (event, fileInfo) => {
