@@ -1,10 +1,12 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, desktopCapturer, ipcMain, screen } from 'electron'
+import { app, protocol, BrowserWindow, desktopCapturer, ipcMain, screen, dialog } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 import { initialize, enable } from '@electron/remote/main';  // 使用 ES 模块导入
 import path from 'path';
+
+const fs = require('fs');
 initialize();  // 初始化 remote 模块
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
@@ -98,6 +100,29 @@ ipcMain.on('end-capture', (event, croppedImage) => {
   if (captureWindow) {
     captureWindow.close();
     mainWindow.webContents.send('image-captured', croppedImage); // 将裁剪后的图像发送回主窗口
+  }
+});
+
+// 监听从渲染进程发出的 'open-file-dialog' 事件
+ipcMain.on('open-file-dialog', async (event) => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'bmp'] }]
+  });
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    const filePath = result.filePaths[0];
+    // 读取文件内容并发送到渲染进程
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        console.error("读取文件失败：", err);
+        event.reply('selected-file', { success: false, message: '文件读取失败' });
+      } else {
+        event.reply('selected-file', { success: true, filePath, fileContent: data });
+      }
+    });
+  } else {
+    event.reply('selected-file', { success: false, message: '未选择文件' });
   }
 });
 
