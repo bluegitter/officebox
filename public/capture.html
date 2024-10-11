@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capture</title>
+  <style>
+    body, html {
+      margin: 0;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      cursor: crosshair;
+      background: transparent;
+      z-index: 0; /* 确保 body 不会阻挡 canvas */
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1000; /* 确保 canvas 位于最上层 */
+    }
+  </style>
+</head>
+<body>
+  <canvas id="screen-canvas"></canvas>
+  <script src="capture.js"></script>
+</body>
+</html>
